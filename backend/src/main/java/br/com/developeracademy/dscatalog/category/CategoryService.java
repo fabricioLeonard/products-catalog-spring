@@ -1,7 +1,12 @@
 package br.com.developeracademy.dscatalog.category;
 
+import br.com.developeracademy.dscatalog.exception.DataBaseException;
 import br.com.developeracademy.dscatalog.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +22,9 @@ public class CategoryService {
     private CategoryRepository repository;
     
     @Transactional( readOnly = true)
-    public List<CategoryDTO> findAll(){
-        List<Category> list = repository.findAll();
-        List<CategoryDTO> listDTOs = list.stream().map(x -> new CategoryDTO(x)).collect(Collectors.toList());
+    public Page<CategoryDTO> findAllPaged(PageRequest pageRequest){
+        Page<Category> list = repository.findAll(pageRequest);
+        Page<CategoryDTO> listDTOs = list.map(x -> new CategoryDTO(x));
         return listDTOs;
     }
 
@@ -47,6 +52,16 @@ public class CategoryService {
             return new CategoryDTO(entity);
         }catch(EntityNotFoundException e){
             throw new ResourceNotFoundException("Id not found " + id + " !");
+        }
+    }
+
+    public void delete(Long id) {
+        try {
+            repository.deleteById(id);
+        }catch (EmptyResultDataAccessException e){
+            throw new ResourceNotFoundException("Id not found " + id);
+        } catch (DataIntegrityViolationException e) {
+            throw new DataBaseException("Integrity violation");
         }
     }
 }
